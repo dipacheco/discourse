@@ -152,7 +152,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
   def create_permalinks
     puts '', 'Creating redirects...', ''
 
-    # https://example.forum.com/forums/questions/2005/missing-file.html
+    # https://discuss.flarum.org/d/29620-flarum-slug-problem
     Topic.find_each do |topic|
       pcf = topic.first_post.custom_fields
       if pcf && pcf["import_id"]
