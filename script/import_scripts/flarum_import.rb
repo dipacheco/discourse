@@ -30,6 +30,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
     import_users
     import_categories
     import_posts
+    create_permalinks
 
   end
 
@@ -148,6 +149,21 @@ class ImportScripts::FLARUM < ImportScripts::Base
     end
   end
 
+  def create_permalinks
+    puts '', 'Creating redirects...', ''
+
+    # https://example.forum.com/forums/questions/2005/missing-file.html
+    Topic.find_each do |topic|
+      pcf = topic.first_post.custom_fields
+      if pcf && pcf["import_id"]
+        id = pcf["import_id"]
+        slug = Slug.for(topic.title)
+        Permalink.create(url: "d/#{id}-#{slug}", topic_id: topic.id) rescue nil
+        print '.'
+      end
+    end
+  end
+  
   def process_FLARUM_post(raw, import_id)
     s = raw.dup
 
