@@ -8,11 +8,12 @@ require File.expand_path(File.dirname(__FILE__) + "/base.rb")
 
 class ImportScripts::FLARUM < ImportScripts::Base
   #SET THE APPROPRIATE VALUES FOR YOUR MYSQL CONNECTION
-  FLARUM_HOST ||= ENV['FLARUM_HOST'] || "db_host"
-  FLARUM_DB ||= ENV['FLARUM_DB'] || "db_name"
+  FLARUM_HOST ||= ENV['FLARUM_HOST'] || "localhost"
+  FLARUM_DB ||= ENV['FLARUM_DB'] || "flarum_db"
   BATCH_SIZE ||= 1000
-  FLARUM_USER ||= ENV['FLARUM_USER'] || "db_user"
-  FLARUM_PW ||= ENV['FLARUM_PW'] || "db_user_pass"
+  FLARUM_USER ||= ENV['FLARUM_USER'] || "root"
+  FLARUM_PW ||= ENV['FLARUM_PW'] || ""
+  AVATARS_DIR ||= ENV['AVATARS_DIR'] || '/var/discourse/shared/standalone/import/data/avatars/'
 
   def initialize
     super
@@ -55,7 +56,33 @@ class ImportScripts::FLARUM < ImportScripts::Base
           username: user['username'],
           name: user['username'],
           created_at: user['joined_at'],
-          last_seen_at: user['last_seen_at']
+          last_seen_at: user['last_seen_at'],
+                    post_create_action: proc do |newuser|
+            if user['avatar_url'] && user['avatar_url'].length > 0
+              photo_path = AVATARS_DIR + user['avatar_url']
+              if File.exist?(photo_path)
+                begin
+                  upload = create_upload(newuser.id, photo_path, File.basename(photo_path))
+                  if upload && upload.persisted?
+                    newuser.import_mode = false
+                    newuser.create_user_avatar
+                    newuser.import_mode = true
+                    newuser.user_avatar.update(custom_upload_id: upload.id)
+                    newuser.update(uploaded_avatar_id: upload.id)
+                  else
+                    puts "Error: Upload did not persist for #{photo_path}!"
+                  end
+                rescue SystemCallError => err
+                  puts "Could not import avatar #{photo_path}: #{err.message}"
+                end
+              else
+                puts "avatar file not found at #{photo_path}"
+              end
+            end
+            if user['banned'] != 0
+              suspend_user(newuser)
+            end
+          end
         }
       end
     end
@@ -153,6 +180,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
     puts '', 'Creating redirects...', ''
 
     # https://discuss.flarum.org/d/29620-flarum-slug-problem
+    puts '', 'Posts...', ''
     Topic.find_each do |topic|
       pcf = topic.first_post.custom_fields
       if pcf && pcf["import_id"]
@@ -162,6 +190,15 @@ class ImportScripts::FLARUM < ImportScripts::Base
         print '.'
       end
     end
+    
+    puts '', 'Categories...', ''
+    Category.find_each do |cat|
+      ccf = cat.custom_fields
+      next unless id = ccf["import_id"]
+      slug = cat['slug']
+      Permalink.create(url: "d/#{id}-#{slug}", category_id: cat.id) rescue nil
+      print '.'
+    end
   end
   
   def process_FLARUM_post(raw, import_id)
@@ -170,6 +207,10 @@ class ImportScripts::FLARUM < ImportScripts::Base
     s
   end
 
+  def use_bbcode_to_md?
+    true
+  end
+  
   def mysql_query(sql)
     @client.query(sql, cache_rows: false)
   end
