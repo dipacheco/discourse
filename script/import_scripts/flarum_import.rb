@@ -79,9 +79,6 @@ class ImportScripts::FLARUM < ImportScripts::Base
                 puts "avatar file not found at #{photo_path}"
               end
             end
-            if user['banned'] != 0
-              suspend_user(newuser)
-            end
           end
         }
       end
