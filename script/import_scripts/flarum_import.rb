@@ -13,7 +13,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
   BATCH_SIZE ||= 1000
   FLARUM_USER ||= ENV['FLARUM_USER'] || "root"
   FLARUM_PW ||= ENV['FLARUM_PW'] || ""
-  AVATARS_DIR ||= ENV['AVATARS_DIR'] || '/var/discourse/shared/standalone/import/data/avatars/'
+  AVATARS_DIR ||= ENV['AVATARS_DIR'] || '/shared/import/data/avatars/'
 
   def initialize
     super
