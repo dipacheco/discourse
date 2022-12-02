@@ -57,9 +57,11 @@ class ImportScripts::FLARUM < ImportScripts::Base
           name: user['username'],
           created_at: user['joined_at'],
           last_seen_at: user['last_seen_at'],
-                    post_create_action: proc do |newuser|
+          post_create_action: proc do |newuser|
+            puts "", "post create action"
             if user['avatar_url'] && user['avatar_url'].length > 0
               photo_path = AVATARS_DIR + user['avatar_url']
+              puts "#{photo_path} - user"
               if File.exist?(photo_path)
                 begin
                   upload = create_upload(newuser.id, photo_path, File.basename(photo_path))
