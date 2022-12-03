@@ -55,7 +55,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
           email: user['email'],
           username: user['username'],
           name: user['name'],
-          password_hash: user['password']
+          password_hash: user['password'],
           created_at: user['joined_at'],
           suspended_till: user['suspended_until']
           last_seen_at: user['last_seen_at'],
