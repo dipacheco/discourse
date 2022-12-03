@@ -57,7 +57,7 @@ class ImportScripts::FLARUM < ImportScripts::Base
           name: user['name'],
           password_hash: user['password'],
           created_at: user['joined_at'],
-          suspended_till: user['suspended_until']
+          suspended_till: user['suspended_until'],
           last_seen_at: user['last_seen_at'],
           post_create_action: proc do |newuser|
             puts "", "post create action"
